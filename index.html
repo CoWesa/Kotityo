@@ -64,22 +64,22 @@ input,select{width:100%;padding:10px;border:1px solid #ced4da;border-radius:8px;
 </div>
 
 <div id="appContent">
-  <div class="header"><h1>🌲 Chore Keeper</h1><p>Talouden työlista (v8.0)</p></div>
+  <div class="header"><h1>🌲 Chore Keeper</h1><p>Talouden työlista (v8.1)</p></div>
   <div class="top-actions">
-    <button type="button" id="openAddBtn" class="btn-main">➕ Lisää uusi työ</button>
-    <button type="button" id="openShareBtn" class="btn-share">🔗 Jaa</button>
+    <button type="button" id="openAddBtn" class="btn-main" onclick="document.getElementById('modalTitle').textContent='Lisää uusi työ';document.getElementById('editIndex').value='';document.getElementById('tTitle').value='';document.getElementById('tDesc').value='';document.getElementById('tStartDate').value=new Date().toISOString().split('T')[0];document.getElementById('tEndDate').value='';document.getElementById('tTime').value='17:00';document.getElementById('tWho').value='';document.getElementById('tPrio').value='medium';document.getElementById('tRepeat').value='once';document.getElementById('modalAdd').classList.add('open');">➕ Lisää uusi työ</button>
+    <button type="button" id="openShareBtn" class="btn-share" onclick="document.getElementById('modalShare').classList.add('open');">🔗 Jaa</button>
   </div>
   <div id="reminderBox" class="reminder"></div>
   <div class="tabs">
-    <button type="button" id="tabTodo" class="tab-btn active">Tekemättömät (0)</button>
-    <button type="button" id="tabDone" class="tab-btn">Kuitatut työt (0)</button>
+    <button type="button" id="tabTodo" class="tab-btn active" onclick="activeTab='todo';this.className='tab-btn active';document.getElementById('tabDone').className='tab-btn';if(window.renderAll)renderAll();">Tekemättömät (0)</button>
+    <button type="button" id="tabDone" class="tab-btn" onclick="activeTab='done';this.className='tab-btn active';document.getElementById('tabTodo').className='tab-btn';if(window.renderAll)renderAll();">Kuitatut työt (0)</button>
   </div>
   <div id="taskList"></div>
 </div>
 
 <div id="modalAdd" class="modal-overlay">
   <div class="modal-box">
-    <div class="modal-header"><h2 id="modalTitle">Lisää uusi työ</h2><button type="button" id="closeAddBtn" class="close-btn">✕</button></div>
+    <div class="modal-header"><h2 id="modalTitle">Lisää uusi työ</h2><button type="button" class="close-btn" onclick="document.getElementById('modalAdd').classList.remove('open');">✕</button></div>
     <input type="hidden" id="editIndex">
     <div class="form-group"><label for="tTitle">Työn nimi *</label><input type="text" id="tTitle" placeholder="Esim. Imurointi"></div>
     <div class="form-group"><label for="tDesc">Lisätiedot</label><input type="text" id="tDesc" placeholder="Tarkemmat ohjeet"></div>
@@ -95,15 +95,15 @@ input,select{width:100%;padding:10px;border:1px solid #ced4da;border-radius:8px;
       <div><label for="tPrio">Kiireellisyys</label><select id="tPrio"><option value="low">Matala</option><option value="medium" selected>Normaali</option><option value="high">Kiireellinen</option></select></div>
       <div><label for="tRepeat">Toistuvuus</label><select id="tRepeat"><option value="once" selected>Kertaluontoinen</option><option value="daily">🔄 Päivittäinen</option><option value="weekly">📅 Viikoittainen</option></select></div>
     </div>
-    <button type="button" id="saveBtn" class="btn-save">Tallenna työ</button>
+    <button type="button" id="saveBtn" class="btn-save" onclick="tallenna()">Tallenna työ</button>
   </div>
 </div>
 
 <div id="modalShare" class="modal-overlay">
   <div class="modal-box">
-    <div class="modal-header"><h2>Jaa työlista</h2><button type="button" id="closeShareBtn" class="close-btn">✕</button></div>
+    <div class="modal-header"><h2>Jaa työlista</h2><button type="button" class="close-btn" onclick="document.getElementById('modalShare').classList.remove('open');">✕</button></div>
     <p style="font-size:14px;color:#495057;margin-bottom:16px">Kopioi linkki ja lähetä se viestillä perheenjäsenelle.</p>
-    <button type="button" id="copyBtn" class="btn-save">📋 Kopioi jakolinkki</button>
+    <button type="button" class="btn-save" onclick="navigator.clipboard.writeText(window.location.origin+window.location.pathname+'#data='+btoa(encodeURIComponent(JSON.stringify(tasks)))).then(function(){alert('Jakolinkki kopioitu!');document.getElementById('modalShare').classList.remove('open');});">📋 Kopioi jakolinkki</button>
   </div>
 </div>
 
@@ -116,19 +116,6 @@ function initApp(){try{var h=window.location.hash;if(h&&h.indexOf("#data=")===0)
 function saveAll(){try{localStorage.setItem("choreV8",JSON.stringify(tasks));}catch(e){}renderAll();}
 function getNow(){var d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
 function isOverdue(t,td,nw){var c=t.endDate||t.startDate;return !c?t.time<nw:c<td||(c===td&&t.time<nw);}
-function renderAll(){
-  var list=document.getElementById("taskList"),now=getNow(),today=getTodayISO();
-  tasks.sort(function(a,b){var dA=a.startDate||"9999-12-31",dB=b.startDate||"9999-12-31";return dA!==dB?dA.localeCompare(dB):(a.time||"").localeCompare(b.time||"");});
-  var todo=tasks.filter(function(t){return!t.done;}),done=tasks.filter(function(t){return t.done;});
-  document.getElementById("tabTodo").textContent="Tekemättömät ("+todo.length+")";
-  document.getElementById("tabDone").textContent="Kuitatut työt ("+done.length+")";
-  var items=activeTab==="todo"?todo:done;list.innerHTML="";
-  if(items.length===0){list.innerHTML="<p style='text-align:center;color:#6c757d;margin-top:40px;'>"+(activeTab==="todo"?"Ei tekemättömiä töitä 🌿":"Ei kuitattuja töitä.")+"</p>";return;}
-  items.forEach(function(t){
-    var idx=tasks.indexOf(t),card=document.createElement("div");
-    card.className="card "+(t.prio||"medium")+(!t.done&&isOverdue(t,today,now)?" overdue":"")+(t.done?" done-card":"");
-    var dt=t.startDate&&t.endDate&&t.endDate!==t.startDate?"<span class='badge'>📅 "+formatDateFI(t.startDate)+" – "+formatDateFI(t.endDate)+"</span>":(t.startDate?"<span class='badge'>📅 "+formatDateFI(t.startDate)+"</span>":"");
-    var rep=t.repeat==="daily"?" | 🔄 Päivittäin":(t.repeat==="weekly"?" | 📅 Viikoittain":"");
-    var dn=t.done&&t.doneAt?" | ✅ Kuitattu "+t.doneAt:"";
-    var meta=document.createElement("div");meta.className="badges";
-    meta.innerHTML=dt+"<span class='badge'>🕒 "+(t.time||"")+"</span><span class='badge user'>👤 "+(t.who||"Kaikki")+rep+dn+"</span>";
+function tallenna(){
+  var title=document.getElementById("tTitle").value.trim();if(!title){alert("Anna työlle nimi!");return;}
+  var sd=document.getElementById("tStartDate").value,ed=document.getElementById("tEndDate").value;

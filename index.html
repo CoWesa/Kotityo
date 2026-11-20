@@ -98,15 +98,14 @@ input,select{width:100%;padding:10px;border:1px solid #ced4da;border-radius:8px;
     <button type="button" id="saveBtn" class="btn-save" onclick="tallenna()">Tallenna työ</button>
   </div>
 </div>
-
 <div id="modalShare" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-header"><h2>Jaa työlista</h2><button type="button" class="close-btn" onclick="document.getElementById('modalShare').classList.remove('open');">✕</button></div>
-    <p style="font-size:14px;color:#495057;margin-bottom:16px">Kopioi linkki ja lähetä se viestillä perheenjäsenelle.</p>
-    <button type="button" class="btn-save" onclick="navigator.clipboard.writeText(window.location.origin+window.location.pathname+'#data='+btoa(encodeURIComponent(JSON.stringify(tasks)))).then(function(){alert('Jakolinkki kopioitu!');document.getElementById('modalShare').classList.remove('open');});">📋 Kopioi jakolinkki</button>
+    <p style="font-size:14px;color:#495057;margin-bottom:10px">Kopioi linkki ja lähetä se viestillä perheenjäsenelle:</p>
+    <input type="text" id="shareBox" readonly style="margin-bottom:10px;background:#f8f9fa;font-size:13px;" onclick="this.select()">
+    <button type="button" class="btn-save" onclick="var b=document.getElementById('shareBox');b.value=window.location.origin+window.location.pathname+'#data='+btoa(encodeURIComponent(JSON.stringify(tasks)));b.select();document.execCommand('copy');alert('Jakolinkki kopioitu!');">📋 Luo ja kopioi jakolinkki</button>
   </div>
 </div>
-
 <script>
 var tasks=[],activeTab="todo";
 if(sessionStorage.getItem("choreAuth")==="ok"){document.getElementById("loginScreen").style.display="none";document.getElementById("appContent").style.display="block";}
@@ -117,5 +116,82 @@ function saveAll(){try{localStorage.setItem("choreV8",JSON.stringify(tasks));}ca
 function getNow(){var d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
 function isOverdue(t,td,nw){var c=t.endDate||t.startDate;return !c?t.time<nw:c<td||(c===td&&t.time<nw);}
 function tallenna(){
-  var title=document.getElementById("tTitle").value.trim();if(!title){alert("Anna työlle nimi!");return;}
-  var sd=document.getElementById("tStartDate").value,ed=document.getElementById("tEndDate").value;
+  var title=document.getElementById("tTitle").value.trim();
+  if(!title){alert("Anna työlle nimi!");return;}
+  var sd=document.getElementById("tStartDate").value;
+  var ed=document.getElementById("tEndDate").value;
+  if(sd&&ed&&ed<sd){alert("Päättymispäivä ei voi olla ennen aloituspäivää!");return;}
+  var idx=document.getElementById("editIndex").value;
+  var ex=idx!==""?tasks[Number(idx)]:null;
+  var obj={
+    title:title,
+    desc:document.getElementById("tDesc").value.trim(),
+    startDate:sd,
+    endDate:ed,
+    time:document.getElementById("tTime").value,
+    who:document.getElementById("tWho").value.trim(),
+    prio:document.getElementById("tPrio").value,
+    repeat:document.getElementById("tRepeat").value,
+    done:ex?ex.done:false,
+    doneAt:ex?ex.doneAt:""
+  };
+  if(idx!=="")tasks[Number(idx)]=obj;
+  else tasks.push(obj);
+  document.getElementById("modalAdd").classList.remove("open");
+  saveAll();
+}
+
+function renderAll(){
+  var list=document.getElementById("taskList"),now=getNow(),today=getTodayISO();
+  tasks.sort(function(a,b){var dA=a.startDate||"9999-12-31",dB=b.startDate||"9999-12-31";return dA!==dB?dA.localeCompare(dB):(a.time||"").localeCompare(b.time||"");});
+  var todo=tasks.filter(function(t){return!t.done;}),done=tasks.filter(function(t){return t.done;});
+  document.getElementById("tabTodo").textContent="Tekemättömät ("+todo.length+")";
+  document.getElementById("tabDone").textContent="Kuitatut työt ("+done.length+")";
+  var items=activeTab==="todo"?todo:done;
+  list.innerHTML="";
+  if(items.length===0){
+    list.innerHTML="<p style='text-align:center;color:#6c757d;margin-top:40px;'>"+(activeTab==="todo"?"Ei tekemättömiä töitä 🌿":"Ei kuitattuja töitä.")+"</p>";
+  }else{
+    items.forEach(function(t){
+      var idx=tasks.indexOf(t),card=document.createElement("div");
+      card.className="card "+(t.prio||"medium")+(!t.done&&isOverdue(t,today,now)?" overdue":"")+(t.done?" done-card":"");
+      var dt=t.startDate&&t.endDate&&t.endDate!==t.startDate?"<span class='badge'>📅 "+formatDateFI(t.startDate)+" – "+formatDateFI(t.endDate)+"</span>":(t.startDate?"<span class='badge'>📅 "+formatDateFI(t.startDate)+"</span>":"");
+      var rep=t.repeat==="daily"?" | 🔄 Päivittäin":(t.repeat==="weekly"?" | 📅 Viikoittain":"");
+      var dn=t.done&&t.doneAt?" | ✅ Kuitattu "+t.doneAt:"";
+      var meta=document.createElement("div");meta.className="badges";
+      meta.innerHTML=dt+"<span class='badge'>🕒 "+(t.time||"")+"</span><span class='badge user'>👤 "+(t.who||"Kaikki")+rep+dn+"</span>";
+      var title=document.createElement("div");title.className="card-title";title.textContent=t.title;
+      card.appendChild(meta);card.appendChild(title);
+      if(t.desc){var desc=document.createElement("div");desc.className="card-desc";desc.textContent=t.desc;card.appendChild(desc);}
+      var btns=document.createElement("div");btns.className="card-buttons";
+      var okBtn=document.createElement("button");okBtn.type="button";okBtn.className="c-btn btn-ok";okBtn.textContent=t.done?"↩️ Palauta":"✅ Kuittaa tehdyksi";
+      okBtn.onclick=function(){t.done=!t.done;t.doneAt=t.done?(new Date().toLocaleDateString("fi-FI")+" "+getNow()):"";saveAll();};
+      var editBtn=document.createElement("button");editBtn.type="button";editBtn.className="c-btn btn-edit";editBtn.textContent="✏️ Muokkaa";
+      editBtn.onclick=function(){
+        document.getElementById("modalTitle").textContent="Muokkaa työtä";
+        document.getElementById("editIndex").value=idx;
+        document.getElementById("tTitle").value=t.title;
+        document.getElementById("tDesc").value=t.desc||"";
+        document.getElementById("tStartDate").value=t.startDate||getTodayISO();
+        document.getElementById("tEndDate").value=t.endDate||"";
+        document.getElementById("tTime").value=t.time||"17:00";
+        document.getElementById("tWho").value=t.who||"";
+        document.getElementById("tPrio").value=t.prio||"medium";
+        document.getElementById("tRepeat").value=t.repeat||"once";
+        document.getElementById("modalAdd").classList.add("open");
+      };
+      var delBtn=document.createElement("button");delBtn.type="button";delBtn.className="c-btn btn-del";delBtn.textContent="🗑️";
+      delBtn.onclick=function(){if(confirm("Poistetaanko työ?")){tasks.splice(idx,1);saveAll();}};
+      btns.appendChild(okBtn);btns.appendChild(editBtn);btns.appendChild(delBtn);card.appendChild(btns);list.appendChild(card);
+    });
+  }
+  var late=todo.filter(function(t){return isOverdue(t,today,now);}).length,box=document.getElementById("reminderBox");
+  box.style.display=late>0?"block":"none";
+  if(late>0)box.innerHTML="🔔 Huomio! <strong>"+late+"</strong> työn määräaika on käsillä tai ohitettu.";
+}
+
+initApp();
+setInterval(function(){if(sessionStorage.getItem("choreAuth")==="ok")renderAll();},30000);
+</script>
+</body>
+</html>

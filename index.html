@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chore Keeper</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
 body{background:#f4f6f8;color:#212529;padding:16px;max-width:600px;margin:0 auto}
 #loginScreen{background:#fff;padding:30px 20px;border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,.1);text-align:center;margin-top:40px}
 #loginScreen h2{color:#1b4332;margin-bottom:8px}
@@ -50,8 +50,6 @@ body{background:#f4f6f8;color:#212529;padding:16px;max-width:600px;margin:0 auto
 label{display:block;font-size:13px;font-weight:600;margin-bottom:4px;color:#495057}
 input,select{width:100%;padding:10px;border:1px solid #ced4da;border-radius:8px;font-size:15px;background:#fff}
 .btn-save{width:100%;background:#1b4332;color:#fff;border:none;padding:12px;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;margin-top:8px}
-#shareUrlBox{margin-top:10px;font-size:13px;background:#f8f9fa;color:#212529}
-#copyStatus{color:#1b4332;font-size:14px;font-weight:600;margin-top:10px;text-align:center;display:none}
 </style>
 </head>
 <body>
@@ -59,32 +57,32 @@ input,select{width:100%;padding:10px;border:1px solid #ced4da;border-radius:8px;
 <div id="loginScreen">
   <h2>🔒 Chore Keeper</h2>
   <p>Anna perheen salasana avataksesi työlistan</p>
-  <input type="password" id="loginInput" placeholder="Salasana" onkeydown="if(event.key==='Enter')avaaLista()">
+  <input type="password" id="loginInput" placeholder="Salasana" onkeydown="if(event.key==='Enter')document.getElementById('loginBtn').click()">
   <br>
-  <button type="button" id="loginBtn" onclick="avaaLista()">Avaa työlista</button>
+  <button type="button" id="loginBtn" onclick="if(document.getElementById('loginInput').value.trim()==='Var2026'){sessionStorage.setItem('choreAuth','ok');document.getElementById('loginScreen').style.display='none';document.getElementById('appContent').style.display='block';if(window.initApp)initApp();}else{document.getElementById('loginError').style.display='block';}">Avaa työlista</button>
   <div id="loginError">⛔ Väärä salasana, yritä uudelleen.</div>
 </div>
 
 <div id="appContent">
-  <div class="header"><h1>🌲 Chore Keeper</h1><p>Talouden työlista (v9.1)</p></div>
+  <div class="header"><h1>🌲 Chore Keeper</h1><p>Talouden työlista (v8.1)</p></div>
   <div class="top-actions">
-    <button type="button" class="btn-main" onclick="avaaLisays()">➕ Lisää uusi työ</button>
-    <button type="button" class="btn-share" onclick="avaaJako()">🔗 Jaa</button>
+    <button type="button" id="openAddBtn" class="btn-main" onclick="document.getElementById('modalTitle').textContent='Lisää uusi työ';document.getElementById('editIndex').value='';document.getElementById('tTitle').value='';document.getElementById('tDesc').value='';document.getElementById('tStartDate').value=new Date().toISOString().split('T')[0];document.getElementById('tEndDate').value='';document.getElementById('tTime').value='17:00';document.getElementById('tWho').value='';document.getElementById('tPrio').value='medium';document.getElementById('tRepeat').value='once';document.getElementById('modalAdd').classList.add('open');">➕ Lisää uusi työ</button>
+    <button type="button" id="openShareBtn" class="btn-share" onclick="document.getElementById('modalShare').classList.add('open');">🔗 Jaa</button>
   </div>
   <div id="reminderBox" class="reminder"></div>
   <div class="tabs">
-    <button type="button" id="tabTodo" class="tab-btn active" onclick="vaihdaTab('todo')">Tekemättömät (0)</button>
-    <button type="button" id="tabDone" class="tab-btn" onclick="vaihdaTab('done')">Kuitatut työt (0)</button>
+    <button type="button" id="tabTodo" class="tab-btn active" onclick="activeTab='todo';this.className='tab-btn active';document.getElementById('tabDone').className='tab-btn';if(window.renderAll)renderAll();">Tekemättömät (0)</button>
+    <button type="button" id="tabDone" class="tab-btn" onclick="activeTab='done';this.className='tab-btn active';document.getElementById('tabTodo').className='tab-btn';if(window.renderAll)renderAll();">Kuitatut työt (0)</button>
   </div>
   <div id="taskList"></div>
 </div>
 
 <div id="modalAdd" class="modal-overlay">
   <div class="modal-box">
-    <div class="modal-header"><h2 id="modalTitle">Lisää uusi työ</h2><button type="button" class="close-btn" onclick="sulje('modalAdd')">✕</button></div>
+    <div class="modal-header"><h2 id="modalTitle">Lisää uusi työ</h2><button type="button" class="close-btn" onclick="document.getElementById('modalAdd').classList.remove('open');">✕</button></div>
     <input type="hidden" id="editIndex">
     <div class="form-group"><label for="tTitle">Työn nimi *</label><input type="text" id="tTitle" placeholder="Esim. Imurointi"></div>
-    <div class="form-group"><label for="tDesc">Lisätiedot</label><input type="text" id="tDesc" placeholder="Tarkemmat ohjeet (valinnainen)"></div>
+    <div class="form-group"><label for="tDesc">Lisätiedot</label><input type="text" id="tDesc" placeholder="Tarkemmat ohjeet"></div>
     <div class="form-row">
       <div><label for="tStartDate">Aloituspäivä</label><input type="date" id="tStartDate"></div>
       <div><label for="tEndDate">Päättymispäivä</label><input type="date" id="tEndDate"></div>
@@ -97,108 +95,27 @@ input,select{width:100%;padding:10px;border:1px solid #ced4da;border-radius:8px;
       <div><label for="tPrio">Kiireellisyys</label><select id="tPrio"><option value="low">Matala</option><option value="medium" selected>Normaali</option><option value="high">Kiireellinen</option></select></div>
       <div><label for="tRepeat">Toistuvuus</label><select id="tRepeat"><option value="once" selected>Kertaluontoinen</option><option value="daily">🔄 Päivittäinen</option><option value="weekly">📅 Viikoittainen</option></select></div>
     </div>
-    <button type="button" class="btn-save" onclick="tallennaTyo()">Tallenna työ</button>
+    <button type="button" id="saveBtn" class="btn-save" onclick="tallenna()">Tallenna työ</button>
   </div>
 </div>
 
 <div id="modalShare" class="modal-overlay">
   <div class="modal-box">
-    <div class="modal-header"><h2>Jaa työlista</h2><button type="button" class="close-btn" onclick="sulje('modalShare')">✕</button></div>
-    <p style="font-size:14px;color:#495057;margin-bottom:10px">Kopioi linkki ja lähetä se viestillä perheenjäsenelle:</p>
-    <input type="text" id="shareUrlBox" readonly onclick="this.select()">
-    <button type="button" class="btn-save" onclick="kopioiLinkki()">📋 Kopioi jakolinkki</button>
-    <div id="copyStatus">✅ Linkki kopioitu leikepöydälle!</div>
+    <div class="modal-header"><h2>Jaa työlista</h2><button type="button" class="close-btn" onclick="document.getElementById('modalShare').classList.remove('open');">✕</button></div>
+    <p style="font-size:14px;color:#495057;margin-bottom:16px">Kopioi linkki ja lähetä se viestillä perheenjäsenelle.</p>
+    <button type="button" class="btn-save" onclick="navigator.clipboard.writeText(window.location.origin+window.location.pathname+'#data='+btoa(encodeURIComponent(JSON.stringify(tasks)))).then(function(){alert('Jakolinkki kopioitu!');document.getElementById('modalShare').classList.remove('open');});">📋 Kopioi jakolinkki</button>
   </div>
 </div>
 
 <script>
-var tasks = [];
-var activeTab = "todo";
-
-function avaaLista() {
-  var val = document.getElementById("loginInput").value.trim();
-  if (val === "Var2026") {
-    sessionStorage.setItem("choreAuth", "ok");
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("appContent").style.display = "block";
-    initApp();
-  } else {
-    document.getElementById("loginError").style.display = "block";
-  }
-}
-
-if (sessionStorage.getItem("choreAuth") === "ok") {
-  document.getElementById("loginScreen").style.display = "none";
-  document.getElementById("appContent").style.display = "block";
-}
-
-function sulje(id) {
-  document.getElementById(id).classList.remove("open");
-}
-
-function getTodayISO() {
-  var d = new Date();
-  var m = d.getMonth() + 1;
-  var day = d.getDate();
-  return d.getFullYear() + "-" + (m < 10 ? "0" + m : m) + "-" + (day < 10 ? "0" + day : day);
-}
-
-function formatDateFI(s) {
-  if (!s) return "";
-  var p = s.split("-");
-  if (p.length !== 3) return s;
-  return Number(p.slice(2, 3).join("")) + "." + Number(p.slice(1, 2).join("")) + "." + p.slice(0, 1).join("");
-}
-
-function getNow() {
-  var d = new Date();
-  var h = d.getHours();
-  var m = d.getMinutes();
-  return (h < 10 ? "0" + h : h) + ":" + (m < 10 ? "0" + m : m);
-}
-
-function isOverdue(t, td, nw) {
-  var c = t.endDate || t.startDate;
-  if (!c) return t.time < nw;
-  return c < td || (c === td && t.time < nw);
-}
-
-function vaihdaTab(tab) {
-  activeTab = tab;
-  document.getElementById("tabTodo").className = tab === "todo" ? "tab-btn active" : "tab-btn";
-  document.getElementById("tabDone").className = tab === "done" ? "tab-btn active" : "tab-btn";
-  renderAll();
-}
-
-function initApp() {
-  try {
-    var h = window.location.hash;
-    if (h && h.indexOf("#data=") === 0) {
-      tasks = JSON.parse(decodeURIComponent(atob(h.substring(6))));
-      localStorage.setItem("choreV91", JSON.stringify(tasks));
-      history.replaceState(null, null, " ");
-    } else {
-      var s = localStorage.getItem("choreV91");
-      tasks = s ? JSON.parse(s) : [];
-    }
-  } catch (e) {
-    tasks = [];
-  }
-  renderAll();
-}
-
-function saveAll() {
-  try {
-    localStorage.setItem("choreV91", JSON.stringify(tasks));
-  } catch (e) {}
-  renderAll();
-}
-
-function avaaLisays() {
-  document.getElementById("modalTitle").textContent = "Lisää uusi työ";
-  document.getElementById("editIndex").value = "";
-  document.getElementById("tTitle").value = "";
-  document.getElementById("tDesc").value = "";
-  document.getElementById("tStartDate").value = getTodayISO();
-  document.getElementById("tEndDate").value = "";
-  document.getElementById("tTime").value = "17:00";
+var tasks=[],activeTab="todo";
+if(sessionStorage.getItem("choreAuth")==="ok"){document.getElementById("loginScreen").style.display="none";document.getElementById("appContent").style.display="block";}
+function getTodayISO(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function formatDateFI(s){if(!s)return"";var p=s.split("-");return p.length===3?Number(p.at(2))+"."+Number(p.at(1))+"."+p.at(0):s;}
+function initApp(){try{var h=window.location.hash;if(h&&h.indexOf("#data=")===0){tasks=JSON.parse(decodeURIComponent(atob(h.substring(6))));localStorage.setItem("choreV8",JSON.stringify(tasks));history.replaceState(null,null," ");}else{var s=localStorage.getItem("choreV8");tasks=s?JSON.parse(s):[];}}catch(e){tasks=[];}renderAll();}
+function saveAll(){try{localStorage.setItem("choreV8",JSON.stringify(tasks));}catch(e){}renderAll();}
+function getNow(){var d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
+function isOverdue(t,td,nw){var c=t.endDate||t.startDate;return !c?t.time<nw:c<td||(c===td&&t.time<nw);}
+function tallenna(){
+  var title=document.getElementById("tTitle").value.trim();if(!title){alert("Anna työlle nimi!");return;}
+  var sd=document.getElementById("tStartDate").value,ed=document.getElementById("tEndDate").value;

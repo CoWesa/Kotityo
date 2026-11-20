@@ -66,7 +66,7 @@ input,select{width:100%;padding:10px;border:1px solid #ced4da;border-radius:8px;
 </div>
 
 <div id="appContent">
-  <div class="header"><h1>🌲 Chore Keeper</h1><p>Talouden työlista (v9.0)</p></div>
+  <div class="header"><h1>🌲 Chore Keeper</h1><p>Talouden työlista (v9.1)</p></div>
   <div class="top-actions">
     <button type="button" class="btn-main" onclick="avaaLisays()">➕ Lisää uusi työ</button>
     <button type="button" class="btn-share" onclick="avaaJako()">🔗 Jaa</button>
@@ -112,63 +112,93 @@ input,select{width:100%;padding:10px;border:1px solid #ced4da;border-radius:8px;
 </div>
 
 <script>
-var tasks=[],activeTab="todo";
-function avaaLista(){
-  if(document.getElementById("loginInput").value.trim()==="Var2026"){
-    sessionStorage.setItem("choreAuth","ok");
-    document.getElementById("loginScreen").style.display="none";
-    document.getElementById("appContent").style.display="block";
+var tasks = [];
+var activeTab = "todo";
+
+function avaaLista() {
+  var val = document.getElementById("loginInput").value.trim();
+  if (val === "Var2026") {
+    sessionStorage.setItem("choreAuth", "ok");
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("appContent").style.display = "block";
     initApp();
-  }else{
-    document.getElementById("loginError").style.display="block";
+  } else {
+    document.getElementById("loginError").style.display = "block";
   }
 }
-if(sessionStorage.getItem("choreAuth")==="ok"){
-  document.getElementById("loginScreen").style.display="none";
-  document.getElementById("appContent").style.display="block";
+
+if (sessionStorage.getItem("choreAuth") === "ok") {
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("appContent").style.display = "block";
 }
-function sulje(id){document.getElementById(id).classList.remove("open");}
-function getTodayISO(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
-function formatDateFI(s){if(!s)return"";var p=s.split("-");return p.length===3?Number(p.at(2))+"."+Number(p.at(1))+"."+p.at(0):s;}
-function getNow(){var d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
-function isOverdue(t,td,nw){var c=t.endDate||t.startDate;return !c?t.time<nw:c<td||(c===td&&t.time<nw);}
-function vaihdaTab(tab){
-  activeTab=tab;
-  document.getElementById("tabTodo").className=tab==="todo"?"tab-btn active":"tab-btn";
-  document.getElementById("tabDone").className=tab==="done"?"tab-btn active":"tab-btn";
+
+function sulje(id) {
+  document.getElementById(id).classList.remove("open");
+}
+
+function getTodayISO() {
+  var d = new Date();
+  var m = d.getMonth() + 1;
+  var day = d.getDate();
+  return d.getFullYear() + "-" + (m < 10 ? "0" + m : m) + "-" + (day < 10 ? "0" + day : day);
+}
+
+function formatDateFI(s) {
+  if (!s) return "";
+  var p = s.split("-");
+  if (p.length !== 3) return s;
+  return Number(p.slice(2, 3).join("")) + "." + Number(p.slice(1, 2).join("")) + "." + p.slice(0, 1).join("");
+}
+
+function getNow() {
+  var d = new Date();
+  var h = d.getHours();
+  var m = d.getMinutes();
+  return (h < 10 ? "0" + h : h) + ":" + (m < 10 ? "0" + m : m);
+}
+
+function isOverdue(t, td, nw) {
+  var c = t.endDate || t.startDate;
+  if (!c) return t.time < nw;
+  return c < td || (c === td && t.time < nw);
+}
+
+function vaihdaTab(tab) {
+  activeTab = tab;
+  document.getElementById("tabTodo").className = tab === "todo" ? "tab-btn active" : "tab-btn";
+  document.getElementById("tabDone").className = tab === "done" ? "tab-btn active" : "tab-btn";
   renderAll();
 }
-function initApp(){
-  try{
-    var h=window.location.hash;
-    if(h&&h.indexOf("#data=")===0){
-      tasks=JSON.parse(decodeURIComponent(atob(h.substring(6))));
-      localStorage.setItem("choreV9",JSON.stringify(tasks));
-      history.replaceState(null,null," ");
-    }else{
-      var s=localStorage.getItem("choreV9");
-      tasks=s?JSON.parse(s):[];
+
+function initApp() {
+  try {
+    var h = window.location.hash;
+    if (h && h.indexOf("#data=") === 0) {
+      tasks = JSON.parse(decodeURIComponent(atob(h.substring(6))));
+      localStorage.setItem("choreV91", JSON.stringify(tasks));
+      history.replaceState(null, null, " ");
+    } else {
+      var s = localStorage.getItem("choreV91");
+      tasks = s ? JSON.parse(s) : [];
     }
-  }catch(e){tasks=[];}
+  } catch (e) {
+    tasks = [];
+  }
   renderAll();
 }
-function saveAll(){
-  try{localStorage.setItem("choreV9",JSON.stringify(tasks));}catch(e){}
+
+function saveAll() {
+  try {
+    localStorage.setItem("choreV91", JSON.stringify(tasks));
+  } catch (e) {}
   renderAll();
 }
-function avaaLisays(){
-  document.getElementById("modalTitle").textContent="Lisää uusi työ";
-  document.getElementById("editIndex").value="";
-  document.getElementById("tTitle").value="";
-  document.getElementById("tDesc").value="";
-  document.getElementById("tStartDate").value=getTodayISO();
-  document.getElementById("tEndDate").value="";
-  document.getElementById("tTime").value="17:00";
-  document.getElementById("tWho").value="";
-  document.getElementById("tPrio").value="medium";
-  document.getElementById("tRepeat").value="once";
-  document.getElementById("modalAdd").classList.add("open");
-}
-function tallennaTyo(){
-  var title=document.getElementById("tTitle").value.trim();
-  if(!title){alert("Anna työlle nimi!");return;}
+
+function avaaLisays() {
+  document.getElementById("modalTitle").textContent = "Lisää uusi työ";
+  document.getElementById("editIndex").value = "";
+  document.getElementById("tTitle").value = "";
+  document.getElementById("tDesc").value = "";
+  document.getElementById("tStartDate").value = getTodayISO();
+  document.getElementById("tEndDate").value = "";
+  document.getElementById("tTime").value = "17:00";

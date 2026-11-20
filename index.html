@@ -95,7 +95,7 @@ input,select{width:100%;padding:10px;border:1px solid #ced4da;border-radius:8px;
       <div><label for="tPrio">Kiireellisyys</label><select id="tPrio"><option value="low">Matala</option><option value="medium" selected>Normaali</option><option value="high">Kiireellinen</option></select></div>
       <div><label for="tRepeat">Toistuvuus</label><select id="tRepeat"><option value="once" selected>Kertaluontoinen</option><option value="daily">🔄 Päivittäinen</option><option value="weekly">📅 Viikoittainen</option></select></div>
     </div>
-    <button type="button" id="saveBtn" class="btn-save" onclick="tallenna()">Tallenna työ</button>
+    <button type="button" id="saveBtn" class="btn-save" onclick="var t=document.getElementById('tTitle').value.trim();if(!t){alert('Anna työlle nimi!');return;}var sd=document.getElementById('tStartDate').value,ed=document.getElementById('tEndDate').value;if(sd&&ed&&ed<sd){alert('Päättymispäivä ei voi olla ennen aloituspäivää!');return;}var idx=document.getElementById('editIndex').value,ex=idx!==''?tasks[Number(idx)]:null;var obj={title:t,desc:document.getElementById('tDesc').value.trim(),startDate:sd,endDate:ed,time:document.getElementById('tTime').value,who:document.getElementById('tWho').value.trim(),prio:document.getElementById('tPrio').value,repeat:document.getElementById('tRepeat').value,done:ex?ex.done:false,doneAt:ex?ex.doneAt:''};if(idx!=='')tasks[Number(idx)]=obj;else tasks.push(obj);document.getElementById('modalAdd').classList.remove('open');localStorage.setItem('choreV8',JSON.stringify(tasks));if(window.renderAll)renderAll();else location.reload();">Tallenna työ</button>
   </div>
 </div>
 

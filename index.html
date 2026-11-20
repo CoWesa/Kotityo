@@ -79,7 +79,7 @@
   <div id="appContent">
     <div class="header">
       <h1>🌲 Chore Keeper</h1>
-      <p>Talouden työlista (v6.4 – Toimiva)</p>
+      <p>Talouden työlista (v6.5 – Valmis)</p>
     </div>
 
     <div class="top-actions">
@@ -214,10 +214,11 @@
       if (!isoStr) return "";
       var p = isoStr.split("-");
       if (p.length !== 3) return isoStr;
-      return Number(p[2]) + "." + Number(p[1]) + "." + p[0];
+      var day = Number(p.slice(2, 3).join(""));
+      var month = Number(p.slice(1, 2).join(""));
+      var year = p.slice(0, 1).join("");
+      return day + "." + month + "." + year;
     }
 
     function initApp() {
       try {
-        var h = window.location.hash;
-        if (h && h.indexOf("#data=") === 0) {

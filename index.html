@@ -22,8 +22,8 @@
     .header p { font-size: 13px; color: #b7e4c7; }
     
     .top-actions { display: flex; gap: 10px; margin-bottom: 16px; }
-    .btn-main { flex: 2; background: #2d6a4f; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 15px; cursor: pointer; text-align: center; text-decoration: none; }
-    .btn-share { flex: 1; background: #e9ecef; color: #212529; border: none; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 15px; cursor: pointer; text-align: center; text-decoration: none; }
+    .btn-main { flex: 2; background: #2d6a4f; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 15px; cursor: pointer; text-align: center; }
+    .btn-share { flex: 1; background: #e9ecef; color: #212529; border: none; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 15px; cursor: pointer; text-align: center; }
     
     .tabs { display: flex; gap: 8px; margin-bottom: 16px; background: #e9ecef; padding: 4px; border-radius: 10px; }
     .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; background: transparent; color: #495057; cursor: pointer; }
@@ -70,28 +70,28 @@
   <div id="loginScreen">
     <h2>🔒 Chore Keeper</h2>
     <p>Anna perheen salasana avataksesi työlistan</p>
-    <input type="password" id="loginInput" placeholder="Salasana">
+    <input type="password" id="loginInput" placeholder="Salasana" onkeydown="if(event.key==='Enter') tarkistaSalasana()">
     <br>
-    <button type="button" id="loginBtn">Avaa työlista</button>
+    <button type="button" id="loginBtn" onclick="tarkistaSalasana()">Avaa työlista</button>
     <div id="loginError">Väärä salasana, yritä uudelleen.</div>
   </div>
 
   <div id="appContent">
     <div class="header">
       <h1>🌲 Chore Keeper</h1>
-      <p>Talouden työlista (v6.5 – Valmis)</p>
+      <p>Talouden työlista (v7.0)</p>
     </div>
 
     <div class="top-actions">
-      <button type="button" id="openAddBtn" class="btn-main">➕ Lisää uusi työ</button>
-      <button type="button" id="openShareBtn" class="btn-share">🔗 Jaa</button>
+      <button type="button" class="btn-main" onclick="avaaLisays()">➕ Lisää uusi työ</button>
+      <button type="button" class="btn-share" onclick="avaaJako()">🔗 Jaa</button>
     </div>
 
     <div id="reminderBox" class="reminder"></div>
 
     <div class="tabs">
-      <button type="button" id="tabTodo" class="tab-btn active">Tekemättömät (0)</button>
-      <button type="button" id="tabDone" class="tab-btn">Kuitatut työt (0)</button>
+      <button type="button" id="tabTodo" class="tab-btn active" onclick="vaihdaValilehti('todo')">Tekemättömät (0)</button>
+      <button type="button" id="tabDone" class="tab-btn" onclick="vaihdaValilehti('done')">Kuitatut työt (0)</button>
     </div>
 
     <div id="taskList"></div>
@@ -101,7 +101,7 @@
     <div class="modal-box">
       <div class="modal-header">
         <h2 id="modalTitle">Lisää uusi työ</h2>
-        <button type="button" class="close-btn" id="closeAddBtn">✕</button>
+        <button type="button" class="close-btn" onclick="suljeLisays()">✕</button>
       </div>
       <input type="hidden" id="editIndex">
       
@@ -156,7 +156,7 @@
         </div>
       </div>
 
-      <button type="button" id="saveBtn" class="btn-save">Tallenna työ</button>
+      <button type="button" class="btn-save" onclick="tallennaTyo()">Tallenna työ</button>
     </div>
   </div>
 
@@ -164,17 +164,27 @@
     <div class="modal-box">
       <div class="modal-header">
         <h2>Jaa työlista</h2>
-        <button type="button" class="close-btn" id="closeShareBtn">✕</button>
+        <button type="button" class="close-btn" onclick="suljeJako()">✕</button>
       </div>
       <p style="font-size:14px; color:#495057; margin-bottom:16px;">Kopioi linkki ja lähetä se viestillä perheenjäsenelle.</p>
-      <button type="button" id="copyBtn" class="btn-save">📋 Kopioi jakolinkki</button>
+      <button type="button" class="btn-save" onclick="kopioiLinkki()">📋 Kopioi jakolinkki</button>
     </div>
   </div>
 
   <script>
-    var OIKEA_SALASANA = "Var2026";
+    var SALASANA = "Var2026";
     var tasks = [];
     var activeTab = "todo";
+
+    function tarkistaSalasana() {
+      var syote = document.getElementById("loginInput").value.trim();
+      if (syote === SALASANA) {
+        sessionStorage.setItem("choreAuth", "ok");
+        avaaSovellus();
+      } else {
+        document.getElementById("loginError").style.display = "block";
+      }
+    }
 
     function avaaSovellus() {
       document.getElementById("loginScreen").style.display = "none";
@@ -186,39 +196,23 @@
       avaaSovellus();
     }
 
-    document.getElementById("loginBtn").onclick = function() {
-      var syote = document.getElementById("loginInput").value.trim();
-      if (syote === OIKEA_SALASANA) {
-        sessionStorage.setItem("choreAuth", "ok");
-        avaaSovellus();
-      } else {
-        document.getElementById("loginError").style.display = "block";
-      }
-    };
-
-    document.getElementById("loginInput").onkeypress = function(e) {
-      if (e.key === "Enter") {
-        document.getElementById("loginBtn").click();
-      }
-    };
-
     function getTodayISO() {
       var d = new Date();
       var yyyy = d.getFullYear();
-      var mm = d.getMonth() + 1 < 10 ? "0" + (d.getMonth() + 1) : "" + (d.getMonth() + 1);
-      var dd = d.getDate() < 10 ? "0" + d.getDate() : "" + d.getDate();
+      var mm = (d.getMonth() + 1 < 10 ? "0" : "") + (d.getMonth() + 1);
+      var dd = (d.getDate() < 10 ? "0" : "") + d.getDate();
       return yyyy + "-" + mm + "-" + dd;
     }
 
     function formatDateFI(isoStr) {
-      if (!isoStr) return "";
+      if (!isoStr || typeof isoStr !== "string") return "";
       var p = isoStr.split("-");
       if (p.length !== 3) return isoStr;
-      var day = Number(p.slice(2, 3).join(""));
-      var month = Number(p.slice(1, 2).join(""));
-      var year = p.slice(0, 1).join("");
-      return day + "." + month + "." + year;
+      return parseInt(p.at(2), 10) + "." + parseInt(p.at(1), 10) + "." + p.at(0);
     }
 
     function initApp() {
       try {
+        var h = window.location.hash;
+        if (h && h.indexOf("#data=") === 0) {
+          tasks = JSON.parse(decodeURIComponent(atob(h.substring(6))));

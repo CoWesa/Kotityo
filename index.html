@@ -18,9 +18,12 @@ body{background:#f4f6f8;color:#212529;padding:16px;max-width:600px;margin:0 auto
 .header h1{font-size:22px;margin-bottom:4px}
 .header p{font-size:13px;color:#b7e4c7}
 .btn-notif{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);padding:8px 12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer}
-.top-actions{display:flex;gap:10px;margin-bottom:16px}
+.top-actions{display:flex;gap:10px;margin-bottom:12px}
 .btn-main{flex:2;background:#2d6a4f;color:#fff;border:none;padding:12px;border-radius:10px;font-weight:600;font-size:15px;cursor:pointer}
 .btn-share{flex:1;background:#e9ecef;color:#212529;border:none;padding:12px;border-radius:10px;font-weight:600;font-size:15px;cursor:pointer}
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.filter-pill{padding:6px 12px;border:1px solid #ced4da;border-radius:20px;background:#fff;color:#495057;font-size:13px;font-weight:600;cursor:pointer}
+.filter-pill.active{background:#1b4332;color:#fff;border-color:#1b4332}
 .tabs{display:flex;gap:8px;margin-bottom:16px;background:#e9ecef;padding:4px;border-radius:10px}
 .tab-btn{flex:1;padding:10px;border:none;border-radius:8px;font-weight:600;font-size:14px;background:transparent;color:#495057;cursor:pointer}
 .tab-btn.active{background:#fff;color:#1b4332}
@@ -53,6 +56,8 @@ body{background:#f4f6f8;color:#212529;padding:16px;max-width:600px;margin:0 auto
 label{display:block;font-size:13px;font-weight:600;margin-bottom:4px;color:#495057}
 .hint{font-size:11px;color:#6c757d;margin-top:3px}
 input,select{width:100%;padding:10px;border:1px solid #ced4da;border-radius:8px;font-size:15px;background:#fff}
+.quick-names{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.q-name-btn{padding:4px 10px;border:1px solid #b7e4c7;background:#e8f5e9;color:#1b4332;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer}
 .weekdays-box{display:none;background:#f8f9fa;padding:10px;border-radius:8px;border:1px solid #dee2e6;margin-bottom:12px}
 .wd-grid{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .wd-label{display:flex;align-items:center;gap:4px;background:#fff;border:1px solid #ced4da;padding:6px 10px;border-radius:6px;font-size:13px;cursor:pointer;margin:0}
@@ -71,13 +76,14 @@ input,select{width:100%;padding:10px;border:1px solid #ced4da;border-radius:8px;
 </div>
 <div id="appContent">
   <div class="header">
-    <div><h1>🌲 Chore Keeper</h1><p>Talouden työlista (v9.5)</p></div>
+    <div><h1>🌲 Chore Keeper</h1><p id="syncStatus">Talouden työlista (v10.0 • Pilvi)</p></div>
     <button type="button" id="notifBtn" class="btn-notif" onclick="pyydaIlmoitus()">🔔 Ilmoitukset</button>
   </div>
   <div class="top-actions">
-    <button type="button" id="openAddBtn" class="btn-main" onclick="document.getElementById('modalTitle').textContent='Lisää uusi työ';document.getElementById('editIndex').value='';document.getElementById('tTitle').value='';document.getElementById('tDesc').value='';document.getElementById('tStartDate').value=new Date().toISOString().split('T');document.getElementById('tEndDate').value='';document.getElementById('tTime').value='17:00';document.getElementById('tWho').value='';document.getElementById('tRepeat').value='once';document.getElementById('wdBox').style.display='none';document.querySelectorAll('.wd-chk').forEach(function(c){c.checked=false;});document.getElementById('modalAdd').classList.add('open');">➕ Lisää uusi työ</button>
+    <button type="button" id="openAddBtn" class="btn-main" onclick="avaaLisays()">➕ Lisää uusi työ</button>
     <button type="button" id="openShareBtn" class="btn-share" onclick="document.getElementById('modalShare').classList.add('open');">🔗 Jaa</button>
   </div>
+  <div id="filterBar" class="filter-bar"></div>
   <div id="reminderBox" class="reminder"></div>
   <div class="tabs">
     <button type="button" id="tabTodo" class="tab-btn active" onclick="activeTab='todo';this.className='tab-btn active';document.getElementById('tabDone').className='tab-btn';if(window.renderAll)renderAll();">Tekemättömät (0)</button>
@@ -97,7 +103,11 @@ input,select{width:100%;padding:10px;border:1px solid #ced4da;border-radius:8px;
     </div>
     <div class="form-row">
       <div><label for="tTime">Kellonaika</label><input type="time" id="tTime" value="17:00"></div>
-      <div><label for="tWho">Tekijä</label><input type="text" id="tWho" placeholder="Nimi"></div>
+      <div>
+        <label for="tWho">Tekijä</label>
+        <input type="text" id="tWho" placeholder="Nimi">
+        <div id="quickNamesBox" class="quick-names"></div>
+      </div>
     </div>
     <div class="form-group">
       <label for="tRepeat">Toistuvuus</label>
@@ -130,13 +140,14 @@ input,select{width:100%;padding:10px;border:1px solid #ced4da;border-radius:8px;
 <div id="modalShare" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-header"><h2>Jaa työlista</h2><button type="button" class="close-btn" onclick="document.getElementById('modalShare').classList.remove('open');">✕</button></div>
-    <p style="font-size:14px;color:#495057;margin-bottom:10px">Kopioi linkki ja lähetä se viestillä perheenjäsenelle:</p>
+    <p style="font-size:14px;color:#495057;margin-bottom:10px">Perheenjäsenet voivat avata saman osoitteen omalla laitteellaan ja kirjautua salasanalla – tiedot päivittyvät automaattisesti pilvestä:</p>
     <input type="text" id="shareBox" readonly style="margin-bottom:10px;background:#f8f9fa;font-size:13px;" onclick="this.select()">
-    <button type="button" class="btn-save" onclick="var b=document.getElementById('shareBox');b.value=window.location.origin+window.location.pathname+'#data='+btoa(encodeURIComponent(JSON.stringify(tasks)));b.select();document.execCommand('copy');alert('Jakolinkki kopioitu!');">📋 Luo ja kopioi jakolinkki</button>
+    <button type="button" class="btn-save" onclick="var b=document.getElementById('shareBox');b.value=window.location.origin+window.location.pathname;b.select();document.execCommand('copy');alert('Osoite kopioitu!');">📋 Kopioi sovelluksen osoite</button>
   </div>
 </div>
 <script>
-var tasks=[],activeTab="todo",notifiedIds={};
+var DB_URL="https://firebasedatabase.app";
+var tasks=[],activeTab="todo",activeFilter="Kaikki",notifiedIds={},lastJson="";
 if(sessionStorage.getItem("choreAuth")==="ok"){document.getElementById("loginScreen").style.display="none";document.getElementById("appContent").style.display="block";}
 
 function pyydaIlmoitus(){
@@ -181,6 +192,7 @@ function addMonthsISO(iso,months){
   if(d.getDate()!==day)d=new Date(y,m+1,0);
   return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 }
+
 function calcNextDate(t){
   var base=t.startDate||getTodayISO();
   var next=null;
@@ -216,26 +228,108 @@ function repeatLabel(t){
   if(!base)return "";
   return base+(t.endDate?" (asti "+formatDateFI(t.endDate)+")":" (∞)");
 }
+function getUniqueNames(){
+  var names=["Kaikki"];
+  tasks.forEach(function(t){
+    var w=(t.who||"").trim();
+    if(w && names.indexOf(w)===-1)names.push(w);
+  });
+  return names;
+}
+
+function renderFilters(){
+  var bar=document.getElementById("filterBar");
+  var names=getUniqueNames();
+  if(names.indexOf(activeFilter)===-1)activeFilter="Kaikki";
+  bar.innerHTML="";
+  if(names.length<=1)return;
+  names.forEach(function(name){
+    var btn=document.createElement("button");
+    btn.type="button";
+    btn.className=activeFilter===name?"filter-pill active":"filter-pill";
+    btn.textContent=(name==="Kaikki"?"👥 Kaikki":"👤 "+name);
+    btn.onclick=function(){activeFilter=name;renderAll();};
+    bar.appendChild(btn);
+  });
+}
+
+function renderQuickNames(){
+  var box=document.getElementById("quickNamesBox");
+  var names=getUniqueNames();
+  box.innerHTML="";
+  names.forEach(function(name){
+    var btn=document.createElement("button");
+    btn.type="button";
+    btn.className="q-name-btn";
+    btn.textContent=name;
+    btn.onclick=function(){document.getElementById("tWho").value=(name==="Kaikki"?"":name);};
+    box.appendChild(btn);
+  });
+}
+
+function avaaLisays(){
+  document.getElementById("modalTitle").textContent="Lisää uusi työ";
+  document.getElementById("editIndex").value="";
+  document.getElementById("tTitle").value="";
+  document.getElementById("tDesc").value="";
+  document.getElementById("tStartDate").value=getTodayISO();
+  document.getElementById("tEndDate").value="";
+  document.getElementById("tTime").value="17:00";
+  document.getElementById("tWho").value="";
+  document.getElementById("tRepeat").value="once";
+  document.getElementById("wdBox").style.display="none";
+  document.querySelectorAll(".wd-chk").forEach(function(c){c.checked=false;});
+  renderQuickNames();
+  document.getElementById("modalAdd").classList.add("open");
+}
+
+function syncFromCloud(firstLoad){
+  fetch(DB_URL).then(function(r){return r.json();}).then(function(data){
+    document.getElementById("syncStatus").textContent="Talouden työlista (v10.0 • Pilvi OK)";
+    if(data && Array.isArray(data)){
+      var jsonStr=JSON.stringify(data);
+      if(jsonStr!==lastJson){
+        lastJson=jsonStr;
+        tasks=data;
+        localStorage.setItem("choreV8",jsonStr);
+        renderAll();
+      }
+    }else if(firstLoad && tasks.length>0){
+      saveAll();
+    }
+  }).catch(function(){
+    document.getElementById("syncStatus").textContent="Talouden työlista (v10.0 • Paikallinen)";
+  });
+}
 
 function initApp(){
   if("Notification" in window && Notification.permission==="granted"){
     document.getElementById("notifBtn").textContent="🔔 Päällä";
   }
   try{
-    var h=window.location.hash;
-    if(h&&h.indexOf("#data=")===0){
-      tasks=JSON.parse(decodeURIComponent(atob(h.substring(6))));
-      localStorage.setItem("choreV8",JSON.stringify(tasks));
-      history.replaceState(null,null," ");
-    }else{
-      var s=localStorage.getItem("choreV8");
-      tasks=s?JSON.parse(s):[];
-    }
+    var s=localStorage.getItem("choreV8");
+    tasks=s?JSON.parse(s):[];
+    lastJson=JSON.stringify(tasks);
   }catch(e){tasks=[];}
   renderAll();
+  syncFromCloud(true);
 }
 
-function saveAll(){try{localStorage.setItem("choreV8",JSON.stringify(tasks));}catch(e){}renderAll();}
+function saveAll(){
+  var jsonStr=JSON.stringify(tasks);
+  lastJson=jsonStr;
+  try{localStorage.setItem("choreV8",jsonStr);}catch(e){}
+  renderAll();
+  fetch(DB_URL,{
+    method:"PUT",
+    headers:{"Content-Type":"application/json"},
+    body:jsonStr
+  }).then(function(){
+    document.getElementById("syncStatus").textContent="Talouden työlista (v10.0 • Tallennettu)";
+  }).catch(function(){
+    document.getElementById("syncStatus").textContent="Talouden työlista (v10.0 • Paikallinen)";
+  });
+}
 
 function tallenna(){
   var title=document.getElementById("tTitle").value.trim();
@@ -270,13 +364,19 @@ function tallenna(){
 }
 
 function renderAll(){
+  renderFilters();
   var list=document.getElementById("taskList");
   tasks.sort(function(a,b){
     var dA=(a.startDate||"9999-12-31")+" "+(a.time||"23:59");
     var dB=(b.startDate||"9999-12-31")+" "+(b.time||"23:59");
     return dA.localeCompare(dB);
   });
-  var todo=tasks.filter(function(t){return!t.done;}),done=tasks.filter(function(t){return t.done;});
+  var filtered=tasks.filter(function(t){
+    if(activeFilter==="Kaikki")return true;
+    return (t.who||"").trim()===activeFilter;
+  });
+  var todo=filtered.filter(function(t){return!t.done;});
+  var done=filtered.filter(function(t){return t.done;});
   document.getElementById("tabTodo").textContent="Tekemättömät ("+todo.length+")";
   document.getElementById("tabDone").textContent="Kuitatut työt ("+done.length+")";
   var items=activeTab==="todo"?todo:done;
@@ -326,6 +426,7 @@ function renderAll(){
         document.getElementById("tRepeat").value=t.repeat||"once";
         document.getElementById("wdBox").style.display=t.repeat==="weekdays"?"block":"none";
         document.querySelectorAll(".wd-chk").forEach(function(c){c.checked=(t.weekdays||[]).indexOf(Number(c.value))!==-1;});
+        renderQuickNames();
         document.getElementById("modalAdd").classList.add("open");
       };
       var delBtn=document.createElement("button");delBtn.type="button";delBtn.className="c-btn btn-del";delBtn.textContent="🗑️";
@@ -351,7 +452,12 @@ function renderAll(){
 }
 
 initApp();
-setInterval(function(){if(sessionStorage.getItem("choreAuth")==="ok")renderAll();},30000);
+setInterval(function(){
+  if(sessionStorage.getItem("choreAuth")==="ok"){
+    syncFromCloud(false);
+    renderAll();
+  }
+},5000);
 </script>
 </body>
 </html>
